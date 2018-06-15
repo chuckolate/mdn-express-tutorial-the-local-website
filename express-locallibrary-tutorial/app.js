@@ -11,9 +11,10 @@ var usersCoolRouter = require('./routes/users_cool');
 
 var app = express();
 
+var myURL = require('./url');
 //Set up mongoose connection
 var mongoose = require('mongoose');
-var mongoDB = 'mongodb://chuck:testing1@ds255740.mlab.com:55740/local_library_express';
+var mongoDB = myURL.mongoDB;
 mongoose.connect(mongoDB);
 mongoose.Promise = global.Promise;
 var db = mongoose.connection;

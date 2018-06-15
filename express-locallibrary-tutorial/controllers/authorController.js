@@ -143,11 +143,56 @@ exports.author_delete_post = function(req, res, next) {
 };
 
 // Display Author update form on GET.
-exports.author_update_get = function(req, res) {
-    res.send('NOT IMPLEMENTED: Author update GET');
+exports.author_update_get = function(req, res, next) {
+    async.parallel({
+        author: function(callback) {
+            Author.findById(req.params.id).exec(callback);
+        },
+        }, function(err, results) {
+            if (err) { return next(err); }
+            if(results.author==null) { // No results.
+                var err = new Error('Author not found');
+                err.status = 404;
+                return next(err);
+            }
+        res.render('author_form', { title: 'Update Author', author: results.author });
+    });
 };
 
 // Handle Author update on POST.
-exports.author_update_post = function(req, res) {
-    res.send('NOT IMPLEMENTED: Author update POST');
-};
+exports.author_update_post = [
+    body('first_name', 'First Name must not be empty.').isLength({ min: 1 }).trim(),
+    body('family_name', 'Family Name must not be empty.').isLength({ min: 1 }).trim(),
+    body('date_of_birth', 'Date of Birth must be valid.').optional({ checkFalsy: true }).isISO8601(),
+    body('date_of_death', 'Date of Death must be valid.').optional({ checkFalsy: true }).isISO8601(),
+
+    sanitizeBody('first_name').trim().escape(),
+    sanitizeBody('family_name').trim().escape(),
+    sanitizeBody('date_of_birth').toDate(),
+    sanitizeBody('date_of_death').toDate(),
+
+    (req, res, next) => {
+        const errors = validationResult(req);
+
+        var author = new Author(
+        {
+            first_name: req.body.first_name,
+            family_name: req.body.family_name,
+            date_of_birth: req.body.date_of_birth,
+            date_of_death: req.body.date_of_death,
+            _id:req.params.id // required else a new ID will be assigned!!!
+        });
+
+        if(!errors.isEmpty()) {
+            res.render('author_form', { title: 'Update Author', author: results.author });
+            return;
+        }
+        else {
+            Author.findByIdAndUpdate(req.params.id, author, {}, function (err, theauthor) {
+                if(err) { return next(err); }
+                res.redirect(theauthor.url);
+            });
+        }
+
+    }
+];
